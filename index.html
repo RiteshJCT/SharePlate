@@ -1,181 +1,214 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SharePlate</title>
-
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f7f8f6;
-      color: #172019;
+      margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f7f8f6; color: #172019;
     }
-
     nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 22px 7%;
+      padding: 22px 7%; display: flex; justify-content: space-between;
+      align-items: center; border-bottom: 1px solid #e5e9e5;
     }
-
-    .logo {
-      font-size: 24px;
-      font-weight: 700;
+    .logo { font-size: 24px; font-weight: 750; }
+    .logo span, h1 span { color: #27964a; }
+    .hero { text-align: center; padding: 65px 20px 35px; }
+    h1 { font-size: clamp(42px, 7vw, 76px); line-height: 1; letter-spacing: -3px; margin: 10px 0 22px; }
+    .intro { color: #69736b; font-size: 18px; line-height: 1.6; max-width: 600px; margin: auto; }
+    main { max-width: 760px; margin: 0 auto; padding: 20px; }
+    .panel {
+      background: white; border: 1px solid #e2e7e2; border-radius: 20px;
+      padding: 28px; margin-bottom: 24px;
     }
-
-    .logo span {
-      color: #35a853;
+    h2 { margin-top: 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 7px; }
+    input, textarea {
+      width: 100%; border: 1px solid #d9dfd9; border-radius: 10px;
+      padding: 12px; font: inherit; background: white;
     }
-
-    .hero {
-      min-height: 75vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 60px 20px;
-    }
-
-    .hero-content {
-      max-width: 800px;
-    }
-
-    h1 {
-      font-size: clamp(48px, 8vw, 86px);
-      line-height: 0.95;
-      margin: 0 0 25px;
-      letter-spacing: -4px;
-    }
-
-    h1 span {
-      color: #35a853;
-    }
-
-    p {
-      font-size: 20px;
-      line-height: 1.6;
-      color: #667067;
-      max-width: 650px;
-      margin: 0 auto 35px;
-    }
-
-    .buttons {
-      display: flex;
-      justify-content: center;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-
+    .field { margin-bottom: 17px; }
     button {
-      border: none;
-      border-radius: 12px;
-      padding: 15px 25px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
+      border: 0; border-radius: 11px; padding: 13px 19px; cursor: pointer;
+      font-size: 15px; font-weight: 650;
     }
-
-    .primary {
-      background: #35a853;
-      color: white;
-    }
-
-    .secondary {
-      background: white;
-      color: #172019;
-      border: 1px solid #dfe4df;
-    }
-
-    .stats {
-      display: flex;
-      justify-content: center;
-      gap: 70px;
-      padding: 50px 20px;
-      border-top: 1px solid #e3e7e3;
-    }
-
-    .stat {
-      text-align: center;
-    }
-
-    .number {
-      font-size: 32px;
-      font-weight: 700;
-    }
-
-    .label {
-      color: #737c74;
-      margin-top: 5px;
-    }
-
-    @media (max-width: 600px) {
-      .stats {
-        gap: 25px;
-      }
-
-      .number {
-        font-size: 24px;
-      }
+    .primary { background: #27964a; color: white; }
+    .secondary { background: #edf5ee; color: #236c38; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    #message { margin-top: 16px; line-height: 1.5; }
+    .donation { padding: 15px 0; border-bottom: 1px solid #edf0ed; }
+    .donation:last-child { border-bottom: 0; }
+    .muted { color: #69736b; font-size: 14px; }
+    @media (max-width: 550px) {
+      .grid { grid-template-columns: 1fr; gap: 0; }
+      .panel { padding: 20px; }
     }
   </style>
 </head>
-
 <body>
+  <nav><div class="logo">Share<span>Plate</span></div></nav>
 
-  <nav>
-    <div class="logo">Share<span>Plate</span></div>
-  </nav>
-
-  <main class="hero">
-    <div class="hero-content">
-
-      <h1>
-        Turn surplus<br>
-        into <span>impact.</span>
-      </h1>
-
-      <p>
-        SharePlate connects surplus food with organizations
-        that can put it to use — before it goes to waste.
-      </p>
-
-      <div class="buttons">
-        <button class="primary" onclick="alert('Donation system coming next!')">
-          Donate Food
-        </button>
-
-        <button class="secondary" onclick="alert('Food finder coming next!')">
-          Find Food
-        </button>
-      </div>
-
-    </div>
-  </main>
-
-  <section class="stats">
-
-    <div class="stat">
-      <div class="number">0</div>
-      <div class="label">Meals Rescued</div>
-    </div>
-
-    <div class="stat">
-      <div class="number">0 lb</div>
-      <div class="label">Food Saved</div>
-    </div>
-
-    <div class="stat">
-      <div class="number">0</div>
-      <div class="label">Successful Matches</div>
-    </div>
-
+  <section class="hero">
+    <h1>Turn surplus<br>into <span>impact.</span></h1>
+    <p class="intro">
+      Connect surplus food with organizations that can put it to use,
+      before it goes to waste.
+    </p>
   </section>
 
+  <main>
+    <section class="panel">
+      <h2>Share a donation</h2>
+      <p class="muted">Enter sample or non-sensitive donation information to test SharePlate.</p>
+
+      <form id="donationForm">
+        <div class="grid">
+          <div class="field">
+            <label for="donor">Donor or organization</label>
+            <input id="donor" maxlength="100" required placeholder="e.g. Lincoln School">
+          </div>
+          <div class="field">
+            <label for="food">Food type</label>
+            <input id="food" maxlength="100" required placeholder="e.g. Boxed meals">
+          </div>
+          <div class="field">
+            <label for="quantity">Quantity (meals/items)</label>
+            <input id="quantity" type="number" min="1" max="100000" required>
+          </div>
+          <div class="field">
+            <label for="location">General pickup location</label>
+            <input id="location" maxlength="200" required placeholder="e.g. Waukee, Iowa">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="until">Available until</label>
+          <input id="until" type="datetime-local" required>
+        </div>
+        <div class="field">
+          <label for="allergens">Allergens (comma-separated)</label>
+          <input id="allergens" maxlength="300" placeholder="e.g. milk, wheat">
+        </div>
+        <div class="field">
+          <label for="diet">Dietary information</label>
+          <textarea id="diet" maxlength="500" rows="2" placeholder="e.g. Vegetarian options available"></textarea>
+        </div>
+        <button class="primary" type="submit" id="submitBtn">Post donation</button>
+        <div id="message" role="status"></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="actions">
+        <h2 style="flex:1">Available donations</h2>
+        <button class="secondary" id="refreshBtn" type="button">Refresh</button>
+      </div>
+      <div id="donationsList"><p class="muted">Load donations to see available listings.</p></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    // Replace these placeholders with your Supabase project values.
+    const SUPABASE_URL = 'PASTE_YOUR_PROJECT_URL_HERE';
+    const SUPABASE_KEY = 'PASTE_YOUR_PUBLISHABLE_KEY_HERE';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const form = document.getElementById('donationForm');
+    const message = document.getElementById('message');
+    const submitBtn = document.getElementById('submitBtn');
+    const list = document.getElementById('donationsList');
+
+    function showMessage(text, success = false) {
+      message.textContent = text;
+      message.style.color = success ? '#237b3b' : '#b42318';
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;',
+        '"': '&quot;', "'": '&#39;'
+      })[c]);
+    }
+
+    async function loadDonations() {
+      list.textContent = 'Loading donations...';
+      const { data, error } = await supabase
+        .from('donations')
+        .select('id, donor_name, food_type, quantity, pickup_location, available_until, status')
+        .eq('status', 'available')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        list.textContent = 'Could not load donations. Check your Supabase connection and table policies.';
+        console.error(error);
+        return;
+      }
+
+      if (!data.length) {
+        list.textContent = 'No donations yet. Add the first one above!';
+        return;
+      }
+
+      list.innerHTML = data.map(d => `
+        <article class="donation">
+          <strong>${escapeHtml(d.food_type)}</strong>
+          <div>${escapeHtml(d.quantity)} meals/items · ${escapeHtml(d.donor_name)}</div>
+          <div class="muted">Pickup area: ${escapeHtml(d.pickup_location)}</div>
+          <div class="muted">Available until: ${escapeHtml(new Date(d.available_until).toLocaleString())}</div>
+        </article>
+      `).join('');
+    }
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      submitBtn.disabled = true;
+      showMessage('Submitting donation...', true);
+
+      const availableUntil = new Date(document.getElementById('until').value);
+      if (!Number.isFinite(availableUntil.getTime()) || availableUntil <= new Date()) {
+        showMessage('Choose a future availability time.');
+        submitBtn.disabled = false;
+        return;
+      }
+
+      const donation = {
+        donor_name: document.getElementById('donor').value.trim(),
+        food_type: document.getElementById('food').value.trim(),
+        quantity: Number(document.getElementById('quantity').value),
+        pickup_location: document.getElementById('location').value.trim(),
+        available_until: availableUntil.toISOString(),
+        allergens: document.getElementById('allergens').value
+          .split(',').map(s => s.trim()).filter(Boolean),
+        dietary_info: document.getElementById('diet').value.trim() || null,
+        status: 'available'
+      };
+
+      const { error } = await supabase.from('donations').insert(donation);
+
+      submitBtn.disabled = false;
+      if (error) {
+        console.error(error);
+        showMessage('Donation not saved: ' + error.message);
+        return;
+      }
+
+      form.reset();
+      showMessage('Donation saved successfully!', true);
+      await loadDonations();
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', loadDonations);
+    loadDonations();
+  </script>
 </body>
 </html>
+```
