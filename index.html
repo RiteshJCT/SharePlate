@@ -153,6 +153,19 @@
 
     .match h3 { margin-bottom: 8px; }
 
+
+    .auth-panel { max-width: 760px; margin: 0 auto 24px; }
+    .auth-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .auth-tabs button { flex: 1; }
+    .auth-tabs .active { background: #27964a; color: white; }
+    .auth-status { margin-top: 14px; line-height: 1.5; }
+    .account-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    select {
+      width: 100%; border: 1px solid #d9dfd9; border-radius: 10px;
+      padding: 12px; font: inherit; background: white; color: #172019;
+    }
+    .hidden { display: none !important; }
+
     @media (max-width: 550px) {
       .grid {
         grid-template-columns: 1fr;
@@ -238,7 +251,7 @@
                     placeholder="Additional food information"></textarea>
         </div>
 
-        <button class="primary" type="submit" id="submitBtn">
+        <button class="primary" type="submit" id="submitBtn" disabled>
           Post donation
         </button>
 
