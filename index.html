@@ -120,6 +120,12 @@
 
     .actions h2 { flex: 1; }
 
+    .muted {
+      color: #69736b;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
     #message, #matchesMessage {
       margin-top: 16px;
       line-height: 1.5;
@@ -130,12 +136,8 @@
       border-bottom: 1px solid #edf0ed;
     }
 
-    .donation:last-child, .match:last-child { border-bottom: 0; }
-
-    .muted {
-      color: #69736b;
-      font-size: 14px;
-      line-height: 1.55;
+    .donation:last-child, .match:last-child {
+      border-bottom: 0;
     }
 
     .match-score {
@@ -148,6 +150,8 @@
       font-size: 13px;
       font-weight: 700;
     }
+
+    .match h3 { margin-bottom: 8px; }
 
     @media (max-width: 550px) {
       .grid {
@@ -198,7 +202,7 @@
           <div class="field">
             <label for="quantity">Quantity (meals/items)</label>
             <input id="quantity" type="number" min="1"
-                   max="100000" required>
+                   max="100000" step="1" required>
           </div>
 
           <div class="field">
@@ -220,9 +224,18 @@
         </div>
 
         <div class="field">
-          <label for="diet">Dietary information</label>
+          <label for="dietaryTypes">Verified dietary types (comma-separated)</label>
+          <input id="dietaryTypes" maxlength="300"
+                 placeholder="e.g. vegetarian, vegan">
+          <p class="muted">
+            Only enter dietary types that have been verified.
+          </p>
+        </div>
+
+        <div class="field">
+          <label for="diet">Additional dietary information</label>
           <textarea id="diet" maxlength="500" rows="2"
-                    placeholder="e.g. Vegetarian options available"></textarea>
+                    placeholder="Additional food information"></textarea>
         </div>
 
         <button class="primary" type="submit" id="submitBtn">
@@ -246,13 +259,11 @@
       </div>
     </section>
 
-    <!-- Smart Matches interface -->
     <section class="panel">
       <h2>Smart Matches</h2>
       <p class="muted">
-        Find organizations that may be a good fit for available donations.
-        SharePlate will rank potential matches using compatibility,
-        quantity, and time remaining.
+        Discover potential recipient organizations ranked by quantity fit,
+        time urgency, and dietary compatibility.
       </p>
 
       <button class="primary" id="findMatchesBtn" type="button">
@@ -264,7 +275,7 @@
 
       <div id="matchesList" style="margin-top: 16px;">
         <p class="muted">
-          Click "Find Matches" to discover suitable organizations.
+          Click Find Matches to rank potential recipients.
         </p>
       </div>
     </section>
@@ -274,7 +285,7 @@
     import { createClient } from
       'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-    // Keep your existing Supabase project values here.
+    // Existing Supabase project configuration.
     const SUPABASE_URL =
       'https://dgreizvgvxgsrlxwhpmq.supabase.co';
 
@@ -307,6 +318,22 @@
       })[c]);
     }
 
+    function normalizeArray(values) {
+      if (!Array.isArray(values)) return [];
+
+      return values
+        .map(value => String(value).trim().toLowerCase())
+        .filter(Boolean);
+    }
+
+    function parseCommaSeparated(value) {
+      return [...new Set(
+        value.split(',')
+          .map(item => item.trim().toLowerCase())
+          .filter(Boolean)
+      )];
+    }
+
     async function loadDonations() {
       list.textContent = 'Loading donations...';
 
@@ -320,18 +347,22 @@
         .limit(50);
 
       if (error) {
+        console.error('Donation loading error:', error);
         list.textContent =
           'Could not load donations. Check your Supabase connection and table policies.';
-        console.error('Donation loading error:', error);
         return;
       }
 
-      if (!data || data.length === 0) {
-        list.textContent = 'No donations yet. Add the first one above!';
+      const activeDonations = (data || []).filter(d =>
+        new Date(d.available_until).getTime() > Date.now()
+      );
+
+      if (!activeDonations.length) {
+        list.textContent = 'No active donations yet. Add the first one above!';
         return;
       }
 
-      list.innerHTML = data.map(d => `
+      list.innerHTML = activeDonations.map(d => `
         <article class="donation">
           <strong>${escapeHtml(d.food_type)}</strong>
           <div>${escapeHtml(d.quantity)} meals/items ·
@@ -353,77 +384,308 @@
       submitBtn.disabled = true;
       showMessage('Submitting donation...', true);
 
-      const availableUntil = new Date(
-        document.getElementById('until').value
+      try {
+        const availableUntil = new Date(
+          document.getElementById('until').value
+        );
+
+        const quantity = Number(
+          document.getElementById('quantity').value
+        );
+
+        if (
+          !Number.isFinite(availableUntil.getTime()) ||
+          availableUntil <= new Date()
+        ) {
+          showMessage('Choose a future availability time.');
+          return;
+        }
+
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100000) {
+          showMessage('Enter a whole-number quantity between 1 and 100,000.');
+          return;
+        }
+
+        const donation = {
+          donor_name: document.getElementById('donor').value.trim(),
+          food_type: document.getElementById('food').value.trim(),
+          quantity,
+          pickup_location: document.getElementById('location').value.trim(),
+          available_until: availableUntil.toISOString(),
+          allergens: parseCommaSeparated(
+            document.getElementById('allergens').value
+          ),
+          dietary_types: parseCommaSeparated(
+            document.getElementById('dietaryTypes').value
+          ),
+          dietary_info:
+            document.getElementById('diet').value.trim() || null,
+          status: 'available'
+        };
+
+        if (
+          !donation.donor_name ||
+          !donation.food_type ||
+          !donation.pickup_location
+        ) {
+          showMessage('Please fill in all required fields.');
+          return;
+        }
+
+        const { error } = await supabase
+          .from('donations')
+          .insert(donation);
+
+        if (error) {
+          console.error('Donation save error:', error);
+          showMessage('Donation not saved: ' + error.message);
+          return;
+        }
+
+        form.reset();
+        showMessage('Donation saved successfully!', true);
+        await loadDonations();
+
+      } catch (error) {
+        console.error(error);
+        showMessage('Something went wrong while saving the donation.');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // Matching algorithm.
+    function calculateMatch(donation, organization) {
+      const quantity = Number(donation.quantity) || 0;
+      const mealsNeeded = Number(organization.meals_needed) || 0;
+      const capacity = Number(organization.capacity) || 0;
+
+      const deadline = new Date(donation.available_until).getTime();
+      const hoursRemaining = (deadline - Date.now()) / 3600000;
+
+      if (!Number.isFinite(deadline) || hoursRemaining <= 0) return null;
+
+      if (
+        organization.can_pickup !== true ||
+        organization.available_for_pickup !== true
+      ) {
+        return null;
+      }
+
+      const foodTypes = normalizeArray(donation.dietary_types);
+      const acceptedTypes =
+        normalizeArray(organization.accepts_dietary_types);
+      const requiredTypes =
+        normalizeArray(organization.dietary_requirements);
+
+      // Reject when an explicitly required dietary type is not verified.
+      if (
+        requiredTypes.length > 0 &&
+        !requiredTypes.every(type => foodTypes.includes(type))
+      ) {
+        return null;
+      }
+
+      // Quantity: 0–30 points.
+      let quantityScore = 15;
+      let quantityExplanation = 'Organization demand is not specified';
+
+      if (mealsNeeded > 0) {
+        quantityScore = Math.min(30, (quantity / mealsNeeded) * 30);
+        quantityExplanation = quantity >= mealsNeeded
+          ? 'Donation can meet the listed meal need'
+          : 'Donation covers part of the listed meal need';
+      } else if (capacity > 0) {
+        quantityScore = Math.min(30, (quantity / capacity) * 30);
+        quantityExplanation = 'Compared with stated capacity';
+      }
+
+      // Time urgency: 0–25 points.
+      let timeScore;
+      if (hoursRemaining <= 3) {
+        timeScore = 25;
+      } else if (hoursRemaining <= 12) {
+        timeScore = 22;
+      } else if (hoursRemaining <= 24) {
+        timeScore = 18;
+      } else {
+        timeScore = 12;
+      }
+
+      // Dietary compatibility: 0–30 points.
+      let dietaryScore = 10;
+      let dietaryExplanation = 'Dietary compatibility is unverified';
+
+      if (foodTypes.length > 0 && acceptedTypes.length > 0) {
+        const acceptedCount = foodTypes.filter(
+          type => acceptedTypes.includes(type)
+        ).length;
+
+        dietaryScore = (acceptedCount / foodTypes.length) * 30;
+
+        dietaryExplanation = acceptedCount === foodTypes.length
+          ? 'All listed dietary types are accepted'
+          : 'Some listed dietary types are not confirmed as accepted';
+      } else if (foodTypes.length > 0) {
+        dietaryExplanation =
+          'Organization dietary acceptance needs confirmation';
+      }
+
+      const score = Math.round(
+        quantityScore + timeScore + dietaryScore
       );
 
-      if (
-        !Number.isFinite(availableUntil.getTime()) ||
-        availableUntil <= new Date()
-      ) {
-        showMessage('Choose a future availability time.');
-        submitBtn.disabled = false;
-        return;
-      }
-
-      const donation = {
-        donor_name: document.getElementById('donor').value.trim(),
-        food_type: document.getElementById('food').value.trim(),
-        quantity: Number(document.getElementById('quantity').value),
-        pickup_location: document.getElementById('location').value.trim(),
-        available_until: availableUntil.toISOString(),
-        allergens: document.getElementById('allergens').value
-          .split(',')
-          .map(s => s.trim().toLowerCase())
-          .filter(Boolean),
-        dietary_info:
-          document.getElementById('diet').value.trim() || null,
-        status: 'available'
+      return {
+        organization,
+        score,
+        quantityScore: Math.round(quantityScore),
+        timeScore,
+        dietaryScore: Math.round(dietaryScore),
+        hoursRemaining,
+        quantityExplanation,
+        dietaryExplanation,
+        allergens: normalizeArray(donation.allergens)
       };
+    }
 
-      if (
-        !donation.donor_name ||
-        !donation.food_type ||
-        !donation.pickup_location ||
-        !Number.isInteger(donation.quantity) ||
-        donation.quantity < 1
-      ) {
-        showMessage('Please check the donation details.');
-        submitBtn.disabled = false;
-        return;
+    async function findMatches() {
+      findMatchesBtn.disabled = true;
+      matchesMessage.textContent = 'Finding and ranking potential matches...';
+      matchesList.replaceChildren();
+
+      try {
+        const [donationsResult, organizationsResult] = await Promise.all([
+          supabase
+            .from('donations')
+            .select(
+              'id, donor_name, food_type, quantity, pickup_location, available_until, allergens, dietary_types, status'
+            )
+            .eq('status', 'available')
+            .order('created_at', { ascending: false })
+            .limit(50),
+
+          supabase
+            .from('organizations')
+            .select(
+              'id, name, address, capacity, meals_needed, can_pickup, available_for_pickup, pickup_radius_miles, dietary_requirements, accepts_allergens, accepts_dietary_types'
+            )
+            .limit(100)
+        ]);
+
+        if (donationsResult.error) throw donationsResult.error;
+        if (organizationsResult.error) throw organizationsResult.error;
+
+        const now = Date.now();
+
+        const donations = (donationsResult.data || []).filter(d =>
+          Number.isFinite(new Date(d.available_until).getTime()) &&
+          new Date(d.available_until).getTime() > now
+        );
+
+        const organizations = organizationsResult.data || [];
+
+        if (!donations.length) {
+          matchesMessage.textContent =
+            'No active donations are available to match.';
+          return;
+        }
+
+        if (!organizations.length) {
+          matchesMessage.textContent =
+            'No organizations found. Add an organization in Supabase first.';
+          return;
+        }
+
+        const sections = [];
+
+        for (const donation of donations) {
+          const rankedMatches = organizations
+            .map(organization => calculateMatch(donation, organization))
+            .filter(Boolean)
+            .sort((a, b) => b.score - a.score);
+
+          if (!rankedMatches.length) continue;
+
+          const matchCards = rankedMatches.map(match => {
+            const org = match.organization;
+
+            const allergenNotice = match.allergens.length
+              ? `<p class="muted"><strong>Allergen verification required:</strong>
+                  ${escapeHtml(match.allergens.join(', '))}.
+                  Confirm ingredients and safe handling directly.</p>`
+              : `<p class="muted">
+                  No allergens were listed. This does not mean the food is allergen-free.
+                </p>`;
+
+            return `
+              <article class="match">
+                <strong>${escapeHtml(org.name)}</strong>
+                <div class="match-score">${match.score}/85 points</div>
+
+                <div class="muted">
+                  Location: ${escapeHtml(org.address || 'Not provided')}
+                </div>
+
+                <div class="muted">
+                  Quantity: ${match.quantityScore}/30 ·
+                  Time urgency: ${match.timeScore}/25 ·
+                  Dietary information: ${match.dietaryScore}/30
+                </div>
+
+                <p class="muted">
+                  ${escapeHtml(match.quantityExplanation)}.
+                  ${escapeHtml(match.dietaryExplanation)}.
+                </p>
+
+                ${allergenNotice}
+
+                <p class="muted">
+                  Actual distance and pickup time have not been verified.
+                </p>
+              </article>
+            `;
+          }).join('');
+
+          sections.push(`
+            <section class="donation">
+              <h3>${escapeHtml(donation.food_type)}</h3>
+              <p class="muted">
+                ${escapeHtml(donation.quantity)} meals/items ·
+                Donor: ${escapeHtml(donation.donor_name)}
+              </p>
+              <p class="muted">
+                Pickup area: ${escapeHtml(donation.pickup_location)}
+              </p>
+              <strong>Ranked organizations</strong>
+              ${matchCards}
+            </section>
+          `);
+        }
+
+        if (!sections.length) {
+          matchesMessage.textContent =
+            'No potential matches found. Check that organizations have both pickup settings enabled and review their dietary requirements.';
+          return;
+        }
+
+        matchesMessage.textContent =
+          'Potential matches ranked by quantity, urgency, and dietary information. These scores are preliminary, not guarantees of suitability.';
+
+        matchesList.innerHTML = sections.join('');
+
+      } catch (error) {
+        console.error('Matching error:', error);
+        matchesMessage.textContent =
+          'Could not calculate matches: ' + error.message;
+      } finally {
+        findMatchesBtn.disabled = false;
       }
-
-      const { error } = await supabase
-        .from('donations')
-        .insert(donation);
-
-      submitBtn.disabled = false;
-
-      if (error) {
-        console.error('Donation save error:', error);
-        showMessage('Donation not saved: ' + error.message);
-        return;
-      }
-
-      form.reset();
-      showMessage('Donation saved successfully!', true);
-      await loadDonations();
-    });
+    }
 
     document.getElementById('refreshBtn')
       .addEventListener('click', loadDonations);
 
-    // Matching logic will be added in the next step.
-    findMatchesBtn.addEventListener('click', () => {
-      matchesMessage.textContent =
-        'The matching engine is not connected yet.';
-      matchesList.innerHTML = `
-        <p class="muted">
-          Next, we'll connect donations to organizations in Supabase
-          and calculate ranked matches.
-        </p>
-      `;
-    });
+    findMatchesBtn.addEventListener('click', findMatches);
 
     loadDonations();
   </script>
